@@ -1,0 +1,32 @@
+name: ddtips2
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.2.1
+  file_picker: ^10.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - images/bg.jpg
+    - assets/D&D.txt
+  fonts:
+    - family: Firlest
+      fonts:
+        - asset: assets/fonts/Firlest-Regular.otf
+    - family: MorrisRoman
+      fonts:
+        - asset: assets/fonts/MorrisRoman-Black.ttf
+        - asset: assets/fonts/MorrisRomanAlternate-Black.ttf
