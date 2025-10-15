@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ddtips2/pages/tips_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -41,6 +42,7 @@ class DDTips extends StatefulWidget {
 class _DDTipsState extends State<DDTips> {
   String tip = 'Qui è dove vanno le curiosità?';
   bool _showOptionsHover = false;
+  bool _showAddTipsHover = false;
   bool timerState = true;
   List<String> tips = [];
   int tipsIndex = 0;
@@ -158,7 +160,7 @@ class _DDTipsState extends State<DDTips> {
       child: SafeArea(
         child: Column(
           children: [
-            optionsMenu(context),
+            buttonsRow(context),
             Spacer(flex: 10),
             tipsBox(),
             Spacer(flex: 10),
@@ -170,96 +172,86 @@ class _DDTipsState extends State<DDTips> {
     );
   }
 
-  Row optionsMenu(BuildContext context) {
+  Row buttonsRow(BuildContext context) {
     return Row(
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 10, top: 10),
-          child: MouseRegion(
-            onEnter: (_) => setState(() => _showOptionsHover = true),
-            onExit: (_) => setState(() => _showOptionsHover = false),
-            child: AnimatedOpacity(
-              duration: Duration(milliseconds: 200),
-              opacity: _showOptionsHover ? 1.0 : 0.3,
-              child: IconButton(
-                icon: Icon(Icons.settings, color: Colors.white),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) {
-                      return StatefulBuilder(
-                        builder: (context, setStateDialog) {
-                          return AlertDialog(
-                            title: Text('Opzioni'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Attiva/Disattiva timer',
-                                        style: TextStyle(fontSize: 18),
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: timerState,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          timerState = value;
-                                          timerControl();
-                                        });
-                                        setStateDialog(() {});
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                Slider.adaptive(
-                                  value: timerSeconds,
-                                  onChanged: timerState
-                                      ? (double value) {
-                                          setState(() {
-                                            setTimer(value);
-                                            setStateDialog(() {});
-                                          });
-                                        }
-                                      : null,
-                                  min: 1,
-                                  max: 30,
-                                  divisions: 29,
-                                  label: '$timerSeconds',
-                                ),
-                                Text(
-                                  'Tempo tra i tips: ${timerSeconds.toInt()} secondi',
-                                  style: TextStyle(fontSize: 15),
-                                ),
-                                SizedBox(height: 30),
-                                Row(
-                                  children: [
-                                    ElevatedButton(
-                                      onPressed: selectBGImage,
-                                      child: Text('Seleziona sfondo'),
-                                    ),
-                                    SizedBox(width: 10),
-                                    ElevatedButton(
-                                      onPressed: selectTipsFile,
-                                      child: Text('Seleziona file dei tips'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+          child: optionsButton(context),
+        ),
+        Spacer(),
+        Padding(
+          padding: const EdgeInsets.only(right: 10, top: 10),
+          child: addTipsButton(context),
         ),
       ],
+    );
+  }
+
+  MouseRegion addTipsButton(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _showAddTipsHover = true),
+      onExit: (_) => setState(() => _showAddTipsHover = false),
+      child: AnimatedOpacity(
+        duration: Duration(milliseconds: 200),
+        opacity: _showAddTipsHover ? 1.0 : 0.3,
+        child: IconButton(
+          icon: Icon(Icons.post_add_rounded, color: Colors.white),
+          onPressed: () async {
+            final result = await Navigator.push<List<String>>(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TipsPage(listOfTips: tips),
+              ),
+            );
+
+            if (result != null) {
+              setState(() {
+                tips = result;
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  MouseRegion optionsButton(BuildContext context) {
+    var theme = Theme.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _showOptionsHover = true),
+      onExit: (_) => setState(() => _showOptionsHover = false),
+      child: AnimatedOpacity(
+        duration: Duration(milliseconds: 200),
+        opacity: _showOptionsHover ? 1.0 : 0.3,
+        child: IconButton(
+          icon: Icon(Icons.settings, color: Colors.white),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) {
+                return StatefulBuilder(
+                  builder: (context, setStateDialog) {
+                    return AlertDialog(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.inversePrimary,
+                      title: Text(
+                        'Opzioni',
+                        style: TextStyle(
+                          color: theme.colorScheme.inverseSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      content: optionsBody(setStateDialog),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -325,9 +317,91 @@ class _DDTipsState extends State<DDTips> {
       ),
     );
   }
+
+  Container optionsBody(setStateDialog) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Attiva/Disattiva timer',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+              Switch(
+                value: timerState,
+                onChanged: (value) {
+                  setState(() {
+                    timerState = value;
+                    timerControl();
+                  });
+                  setStateDialog(() {});
+                },
+              ),
+            ],
+          ),
+          Slider.adaptive(
+            value: timerSeconds,
+            onChanged: timerState
+                ? (double value) {
+                    setState(() {
+                      setTimer(value);
+                      setStateDialog(() {});
+                    });
+                  }
+                : null,
+            min: 1,
+            max: 30,
+            divisions: 29,
+            label: '$timerSeconds',
+          ),
+          Text(
+            'Tempo tra i tips: ${timerSeconds.toInt()} secondi',
+            style: TextStyle(fontSize: 15),
+          ),
+          SizedBox(height: 30),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: selectBGImage,
+                child: Text('Seleziona sfondo'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: selectTipsFile,
+                child: Text('Seleziona file dei tips'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 Future<List<String>> loadTips() async {
   final raw = await rootBundle.loadString('assets/D&D.txt');
   return raw.split('|').map((e) => e.trim()).toList();
+}
+
+class OptionsBody extends StatelessWidget {
+  const OptionsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return throw UnimplementedError();
+  }
 }
