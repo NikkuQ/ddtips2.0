@@ -1,3 +1,4 @@
+import 'package:ddtips2/widget/tip_item.dart';
 import 'package:flutter/material.dart';
 
 class TipsPage extends StatefulWidget {
@@ -9,42 +10,46 @@ class TipsPage extends StatefulWidget {
 }
 
 class _TipsPageState extends State<TipsPage> {
-  late List<String> modifiedList;
+  late List<TipItem> _tipList;
+  late List<String> _originalList;
   final ScrollController _scrollController = ScrollController();
-  final Map<int, FocusNode> _focusNodes = {};
-  final Map<int, TextEditingController> _textController = {};
+  bool _listIsChanged = false;
 
   @override
   void initState() {
     super.initState();
-    modifiedList = List<String>.from(widget.listOfTips);
-    _initializeControllers();
-  }
-
-  void _initializeControllers() {
-    for (int i = 0; i < modifiedList.length; i++) {
-      _focusNodes[i] = FocusNode();
-      _textController[i] = TextEditingController(text: modifiedList[i]);
-    }
+    _originalList = List<String>.from(widget.listOfTips);
+    _tipList = widget.listOfTips.map((text) => TipItem(text: text)).toList();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _focusNodes.values.forEach(disposeNodes);
-    _textController.values.forEach(disposeControllers);
+    disposeList();
     super.dispose();
   }
 
-  void disposeNodes(node) => node.dispose();
-  void disposeControllers(controller) => controller.dispose();
+  void disposeList() {
+    for (var item in _tipList) {
+      item.dispose();
+    }
+  }
+
+  void cancelChanges() {
+    _listIsChanged = false;
+    setState(() {
+      disposeList();
+      _tipList = _originalList.map((text) => TipItem(text: text)).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text('Lista dei TIP'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: theme.colorScheme.inversePrimary,
       ),
       body: Center(
         child: Column(
@@ -53,27 +58,30 @@ class _TipsPageState extends State<TipsPage> {
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                itemCount: modifiedList.length,
+                itemCount: _tipList.length,
                 itemBuilder: (context, index) {
+                  final tip = _tipList[index];
                   return ListTile(
+                    key: tip.key,
                     contentPadding: EdgeInsets.only(left: 10, right: 5),
                     title: TextField(
-                      controller: _textController[index],
-                      focusNode: _focusNodes[index],
+                      controller: tip.controller,
+                      focusNode: tip.focusNode,
                       onChanged: (value) {
-                        modifiedList[index] = value;
+                        _listIsChanged = true;
+                        setState(() {
+                          tip.text = value;
+                        });
                       },
                     ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete),
                       color: Colors.redAccent,
                       onPressed: () {
+                        _listIsChanged = true;
                         setState(() {
-                          _focusNodes[index]?.dispose();
-                          _textController[index]?.dispose();
-                          _focusNodes.remove(index);
-                          _textController.remove(index);
-                          modifiedList.removeAt(index);
+                          tip.dispose();
+                          _tipList.removeAt(index);
                         });
                       },
                     ),
@@ -89,20 +97,26 @@ class _TipsPageState extends State<TipsPage> {
                 left: 20,
               ),
               width: double.infinity,
-              color: Theme.of(context).colorScheme.inversePrimary,
+              color: theme.colorScheme.inversePrimary,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   ElevatedButton.icon(
-                    onPressed: () {
-                      addAndScroll();
-                    },
+                    onPressed: addAndScroll,
                     icon: Icon(Icons.post_add),
                     label: Text("Aggiungi tip"),
                   ),
                   ElevatedButton.icon(
+                    onPressed: _listIsChanged ? cancelChanges : null,
+                    icon: Icon(Icons.cancel_outlined),
+                    label: Text("Annulla modifiche"),
+                  ),
+                  ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.pop(context, modifiedList); // Torna indietro
+                      Navigator.pop(
+                        context,
+                        _tipList.map((tip) => tip.text).toList(),
+                      );
                     },
                     icon: Icon(Icons.save),
                     label: Text('Salva e indietro'),
@@ -117,12 +131,9 @@ class _TipsPageState extends State<TipsPage> {
   }
 
   void addAndScroll() {
-    int newIndex = modifiedList.length;
-
+    _listIsChanged = true;
     setState(() {
-      modifiedList.add("");
-      _focusNodes[newIndex] = FocusNode();
-      _textController[newIndex] = TextEditingController(text: "");
+      _tipList.add(TipItem(text: ""));
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -134,7 +145,7 @@ class _TipsPageState extends State<TipsPage> {
         );
       }
 
-      _focusNodes[newIndex]?.requestFocus();
+      _tipList.last.focusNode.requestFocus();
     });
   }
 }
