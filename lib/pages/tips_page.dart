@@ -1,5 +1,6 @@
 import 'package:ddtips2/widget/tip_item.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TipsPage extends StatefulWidget {
   const TipsPage({super.key, required this.listOfTips});
@@ -113,10 +114,11 @@ class _TipsPageState extends State<TipsPage> {
                   ),
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.pop(
-                        context,
-                        _tipList.map((tip) => tip.text).toList(),
-                      );
+                      final List<String> finalList = _tipList
+                          .map((tip) => tip.text)
+                          .toList();
+                      Navigator.pop(context, finalList);
+                      storeList(finalList);
                     },
                     icon: Icon(Icons.save),
                     label: Text('Salva e indietro'),
@@ -147,5 +149,10 @@ class _TipsPageState extends State<TipsPage> {
 
       _tipList.last.focusNode.requestFocus();
     });
+  }
+
+  void storeList(List<String> listToStore) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList("storedList", listToStore);
   }
 }

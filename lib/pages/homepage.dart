@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ddtips2/pages/tips_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -393,15 +393,13 @@ class _DDTipsState extends State<DDTips> {
 }
 
 Future<List<String>> loadTips() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final storedList = prefs.getStringList("storedList");
+
+  if (storedList != null) {
+    return storedList;
+  }
+
   final raw = await rootBundle.loadString('assets/D&D.txt');
   return raw.split('|').map((e) => e.trim()).toList();
-}
-
-class OptionsBody extends StatelessWidget {
-  const OptionsBody({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return throw UnimplementedError();
-  }
 }
